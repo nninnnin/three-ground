@@ -33,6 +33,7 @@ document.body.appendChild(renderer.domElement);
 const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
 const boxMaterial = new THREE.MeshStandardMaterial({
   color: 0x00ff00,
+  wireframe: true,
 });
 boxMaterial.castShadow = true;
 
@@ -43,15 +44,18 @@ cube.castShadow = true;
 
 // plane
 const ceilGeometry = new THREE.PlaneGeometry(10, 10);
-const ceilMaterial = new THREE.MeshStandardMaterial();
+const ceilMaterial = new THREE.MeshStandardMaterial({
+  wireframe: true,
+});
 const ceil = new THREE.Mesh(ceilGeometry, ceilMaterial);
 ceil.rotateX(-Math.PI * 0.5);
 ceil.position.set(0, -1, 0);
 ceil.receiveShadow = true;
 
-window.addEventListener("click", () => {
+window.addEventListener("click", (e) => {
   console.log("aa");
-  console.log(currentIntersect);
+  console.log(currentIntersect.faceIndex);
+  console.log(currentIntersect.face);
 });
 
 scene.add(ceil);
@@ -90,15 +94,35 @@ camera.lookAt(new THREE.Vector3(0, -5, 0));
 
 // const orbit = new OrbitControls(camera, renderer.domElement);
 
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+function onPointerMove(event) {
+  // calculate pointer position in normalized device coordinates
+  // (-1 to +1) for both components
+
+  pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+}
+
+window.addEventListener("pointermove", onPointerMove);
+
+let currentIntersect;
+
 function animate() {
   requestAnimationFrame(animate);
 
   spotLight.position.x = Math.sin(Date.now() * 0.001) * 5;
 
-  renderer.render(scene, camera);
+  // update the picking ray with the camera and pointer position
+  raycaster.setFromCamera(pointer, camera);
 
-  // 여기서부터 다시 이어나갑시다..
-  // https://threejs.org/docs/#manual/en/introduction/Creating-a-scene
+  // calculate objects intersecting the picking ray
+  const intersects = raycaster.intersectObjects(scene.children);
+
+  currentIntersect = intersects[0];
+
+  renderer.render(scene, camera);
 }
 
 window.addEventListener("resize", () => {
